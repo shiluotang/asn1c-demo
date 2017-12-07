@@ -60,7 +60,7 @@ namespace asn1cxx {
         std::size_t _M_size;
     };
 
-    std::ostream& operator << (std::ostream&, memblock const&);
+    extern std::ostream& operator << (std::ostream&, memblock const&);
 
 
     template <typename T> struct asn1c_ptr;
