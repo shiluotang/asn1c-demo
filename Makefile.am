@@ -68,6 +68,8 @@ libasn1cxx_la_LIBADD = libasn1c-skeletons.la
 check_PROGRAMS = test1
 
 test1_SOURCES = ./tests/test1.cpp
-test1_LDADD	= libasn1cxx.la
+test1_LDADD	= \
+			  libasn1c-skeletons.la \
+			  libasn1cxx.la
 
 TESTS = $(check_PROGRAMS)
