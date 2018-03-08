@@ -37,6 +37,7 @@ BEGIN
 	HTag ::= CTag
 	
 	ITag ::= SEQUENCE {
-		test HTag
+		test HTag,
+        test2 GTag
 	}
 END
