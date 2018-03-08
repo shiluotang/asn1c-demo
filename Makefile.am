@@ -1,14 +1,14 @@
 ACLOCAL_AMFLAGS = -I m4
 
-IGNORE_WARNINGS = \
--Wno-deprecated \
--Wno-shift-negative-value \
--Wno-visibility
+#IGNORE_WARNINGS = \
+#-Wno-deprecated \
+#-Wno-shift-negative-value \
+#-Wno-visibility
 
 AM_CPPFLAGS	= -g -Wall $(IGNORE_WARNINGS) -I@top_srcdir@/src/asn1c/skeletons
 AM_CFLAGS	=
 AM_CXXFLAGS	=
-AM_LDFLAGS	= -no-undefined
+AM_LDFLAGS	=
 
 lib_LTLIBRARIES = \
 libasn1c-skeletons.la \
