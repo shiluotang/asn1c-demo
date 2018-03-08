@@ -5,7 +5,7 @@ IGNORE_WARNINGS = \
 				  -Wno-shift-negative-value \
 				  -Wno-visibility
 
-AM_CPPFLAGS	= -Wall -Werror $(IGNORE_WARNINGS) -I@top_srcdir@/src/asn1c/skeletons
+AM_CPPFLAGS	= -Wall $(IGNORE_WARNINGS) -I@top_srcdir@/src/asn1c/skeletons
 
 lib_LTLIBRARIES = \
 				  libasn1c-skeletons.la \
