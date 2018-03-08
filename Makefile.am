@@ -88,8 +88,8 @@ BUILT_SOURCES = \
 ./src/asn1c/module/test/ITag.c
 
 $(libasn1c_module_test_la_SOURCES):	@top_srcdir@/src/asn1c/module/test/test.asn1
-	rm ${@}
-	if pushd ../src/asn1c/module/test > /dev/null; then asn1c -fcompound-names -gen-PER -pdu=auto -R test.asn1; popd > /dev/null; fi
+	rm -f ${@}
+	if pushd ../src/asn1c/module/test > /dev/null; then asn1c -S ../../skeletons -fcompound-names -gen-PER -pdu=auto -R test.asn1; popd > /dev/null; fi
 
 libasn1cxx_la_SOURCES = ./src/asn1cxx.cpp
 libasn1cxx_la_LIBADD = libasn1c-skeletons.la
