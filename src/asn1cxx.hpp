@@ -12,14 +12,6 @@
 #include <asn_application.h>
 #include <asn_internal.h>
 
-#include <per_decoder.h>
-#include <per_encoder.h>
-#include <per_support.h>
-
-#include <xer_decoder.h>
-#include <xer_encoder.h>
-#include <xer_support.h>
-
 namespace asn1cxx {
 
     class memblock {
@@ -68,7 +60,7 @@ namespace asn1cxx {
         std::size_t _M_size;
     };
 
-    std::ostream& operator << (std::ostream&, memblock const&);
+    extern std::ostream& operator << (std::ostream&, memblock const&);
 
 
     template <typename T> struct asn1c_ptr;
