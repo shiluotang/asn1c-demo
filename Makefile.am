@@ -6,6 +6,9 @@ IGNORE_WARNINGS = \
 				  -Wno-visibility
 
 AM_CPPFLAGS	= -Wall $(IGNORE_WARNINGS) -I@top_srcdir@/src/asn1c/skeletons
+AM_CFLAGS	=
+AM_CXXFLAGS	=
+AM_LDFLAGS	= -no-undefined
 
 lib_LTLIBRARIES = \
 				  libasn1c-skeletons.la \
