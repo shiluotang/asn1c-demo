@@ -1,19 +1,19 @@
 ACLOCAL_AMFLAGS = -I m4
 
 IGNORE_WARNINGS = \
-				  -Wno-deprecated \
-				  -Wno-shift-negative-value \
-				  -Wno-visibility
+-Wno-deprecated \
+-Wno-shift-negative-value \
+-Wno-visibility
 
-AM_CPPFLAGS	= -Wall $(IGNORE_WARNINGS) -I@top_srcdir@/src/asn1c/skeletons
+AM_CPPFLAGS	= -g -Wall $(IGNORE_WARNINGS) -I@top_srcdir@/src/asn1c/skeletons
 AM_CFLAGS	=
 AM_CXXFLAGS	=
 AM_LDFLAGS	= -no-undefined
 
 lib_LTLIBRARIES = \
-				  libasn1c-skeletons.la \
-				  libasn1c-module-test.la \
-				  libasn1cxx.la
+libasn1c-skeletons.la \
+libasn1c-module-test.la \
+libasn1cxx.la
 
 libasn1c_skeletons_la_SOURCES = \
 ./src/asn1c/skeletons/ANY.c \
@@ -95,14 +95,16 @@ $(libasn1c_module_test_la_SOURCES):	@top_srcdir@/src/asn1c/module/test/test.asn1
 	if pushd ../src/asn1c/module/test > /dev/null; then asn1c -S ../../skeletons -fcompound-names -gen-PER -pdu=auto -R test.asn1; popd > /dev/null; fi
 
 libasn1cxx_la_SOURCES = ./src/asn1cxx.cpp
-libasn1cxx_la_LIBADD = libasn1c-skeletons.la
+libasn1cxx_la_LIBADD = \
+libasn1c-skeletons.la \
+libasn1c-module-test.la
 
 check_PROGRAMS = test1
 
 test1_SOURCES = ./tests/test1.cpp
 test1_LDADD	= \
-			  libasn1c-skeletons.la \
-			  libasn1c-module-test.la \
-			  libasn1cxx.la
+libasn1c-skeletons.la \
+libasn1c-module-test.la \
+libasn1cxx.la
 
 TESTS = $(check_PROGRAMS)
