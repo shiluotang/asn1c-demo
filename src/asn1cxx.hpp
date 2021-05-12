@@ -3,178 +3,151 @@
 
 #include <vector>
 #include <string>
+#include <ostream>
+#include <sstream>
 #include <algorithm>
 #include <stdexcept>
 #include <iosfwd>
 #include <memory>
 #include <utility>
 
-#include <asn_application.h>
 #include <asn_internal.h>
+#include <asn_application.h>
+
+#include "bytes.hpp"
+#include "refcnt_ptr.hpp"
 
 namespace asn1cxx {
-
-    class memblock {
+    class asn1c_deleter: public deleter {
     public:
-        typedef unsigned char byte;
+        asn1c_deleter(asn_TYPE_descriptor_t *td): _M_td(td) { }
 
-        memblock()
-            :_M_data(0),
-            _M_size(_M_data.size())
-        { }
-
-        template <typename T, size_t N>
-        memblock(T const (&a)[N])
-            : _M_data(reinterpret_cast<byte const*>(&a[0]), reinterpret_cast<byte const*>(&a[0]) + sizeof(T) * N),
-            _M_size(_M_data.size())
-        {
-        }
-
-        memblock(std::string const &s)
-            :_M_data(s.begin(), s.end()),
-            _M_size(_M_data.size())
-        {
-        }
-
-        memblock(void const* buffer, size_t buflen)
-            :_M_data(reinterpret_cast<byte const*>(buffer), reinterpret_cast<byte const*>(buffer) + buflen),
-            _M_size(_M_data.size())
-        {
-        }
-
-        void* address() { return &_M_data[0]; }
-
-        void const* address() const { return &_M_data[0]; }
-
-        size_t size() const { return _M_size; }
-
-        void assign(void const *buffer, size_t buflen) {
-            if (_M_data.size() < buflen)
-                _M_data.resize(buflen);
-            byte const *p = reinterpret_cast<byte const*>(buffer);
-            std::copy(p, p + buflen, _M_data.begin());
-            _M_size = buflen;
+        void operator() (void *p) {
+            if (_M_td)
+                ASN_STRUCT_FREE(*_M_td, p);
+            else
+                FREEMEM(p);
         }
     private:
-        std::vector<byte> _M_data;
-        std::size_t _M_size;
-    };
-
-    extern std::ostream& operator << (std::ostream&, memblock const&);
-
-
-    template <typename T> struct asn1c_ptr;
-    template <typename T>
-    struct asn1c_ptr_ref {
-        typedef typename asn1c_ptr<T>::asn1c_struct value_type;
-        typedef value_type *pointer;
-
-        asn1c_ptr_ref(pointer ptr) :_M_ptr(ptr) { }
-
-        pointer _M_ptr;
-    };
-
-    template <typename T>
-    struct asn1c_ptr {
-
-        typedef T value_type;
-        typedef T *pointer;
-        typedef T &reference;
-
-        struct asn1c_struct {
-            explicit asn1c_struct(asn_TYPE_descriptor_t *td, T *struct_ptr)
-                : _M_td(td),
-                _M_struct_ptr(struct_ptr)
-            {
-            }
-
-            ~asn1c_struct() {
-                if (_M_struct_ptr && _M_td) {
-                    ASN_STRUCT_FREE(*_M_td, _M_struct_ptr);
-                    _M_struct_ptr = NULL;
-                }
-            }
-
-            asn_TYPE_descriptor_t *_M_td;
-            T *_M_struct_ptr;
-        };
-
-        asn1c_ptr(asn_TYPE_descriptor_t &td, T *p)
-            : _M_ptr(new asn1c_struct(&td, p))
-        {
-        }
-
-        asn1c_ptr(asn1c_ptr_ref<T> ref) :_M_ptr(ref._M_ptr) { }
-
-        operator asn1c_ptr_ref<T> () {
-            return asn1c_ptr_ref<T>(_M_ptr.release());
-        }
-
-        // pointer operation overload
-        reference operator * () { return *_M_ptr.get()->_M_struct_ptr; }
-
-        pointer operator -> () { return _M_ptr ? _M_ptr.get()->_M_struct_ptr : NULL; }
-
-        pointer get() { return _M_ptr ? _M_ptr.get()->_M_struct_ptr : NULL; }
-
-        std::auto_ptr<asn1c_struct> _M_ptr;
+        asn_TYPE_descriptor_t *_M_td;
     };
 
     class uper_codec {
-    private:
-        struct asn1c_pointer_guard {
-            asn1c_pointer_guard(void *ptr) :_M_ptr(ptr) { }
-            ~asn1c_pointer_guard() {
-                if (_M_ptr) {
-                    FREEMEM(_M_ptr);
-                    _M_ptr = NULL;
-                }
-            }
-            void *_M_ptr;
-        };
-
-        static ssize_t encode0(asn_TYPE_descriptor_t&, void*, void**buffer);
-        static void* decode0(asn_TYPE_descriptor_t&, memblock const&);
     public:
-        template <typename T>
-        static memblock encode(asn_TYPE_descriptor_t &td, T const &node) {
-            void *buffer = NULL;
-            ssize_t n = 0;
-
-            T dup = node;
-            n = encode0(td, &dup, &buffer);
-            asn1c_pointer_guard guarder(buffer);
-            return memblock(buffer, n);
-        }
+        //typedef int (asn_app_consume_bytes_f)(const void *buffer, size_t size,
+        //    void *application_specific_key);
+        static int consume(void const*, size_t, void*);
 
         template <typename T>
-        static asn1c_ptr<T> decode(asn_TYPE_descriptor_t &td, memblock const &block) {
-            T *p = reinterpret_cast<T*>(decode0(td, block));
-            if (!p)
-                throw std::runtime_error("Failed to decode uper data!");
-            return asn1c_ptr<T>(td, p);
-        }
+        bytes
+        encode(T const&, asn_TYPE_descriptor_t*);
+
+        template <typename T>
+        refcnt_ptr<T>
+        decode(bytes const&, asn_TYPE_descriptor_t*);
     };
 
+    template <typename T>
+    bytes
+    uper_codec::encode(T const &pdu, asn_TYPE_descriptor_t *td) {
+        bytes b;
+        asn_enc_rval_t rval = uper_encode(
+                td,
+                static_cast<void*>(const_cast<T*>(&pdu)),
+                &uper_codec::consume,
+                &b);
+        if (rval.encoded == -1) {
+            std::ostringstream es;
+            es << "failed to encode " << rval.failed_type->name;
+            throw std::runtime_error(es.str());
+        }
+        return b;
+    }
+
+    template <typename T>
+    refcnt_ptr<T>
+    uper_codec::decode(bytes const &uper, asn_TYPE_descriptor_t *td) {
+        T *pdu = NULL;
+        refcnt_ptr<T> p;
+        asn_dec_rval_t rval = uper_decode_complete(
+                NULL,
+                td,
+                reinterpret_cast<void**>(&pdu),
+                uper.address(),
+                uper.size());
+        refcnt_ptr<T> pp(pdu, new asn1c_deleter(td));
+        p.swap(pp);
+        if (rval.code != RC_OK) {
+            std::ostringstream es;
+            es << "failed to decode " << td->name;
+            throw std::runtime_error(es.str());
+        }
+        return p;
+    }
+
     class xer_codec {
-    private:
-        static std::string encode0(asn_TYPE_descriptor_t&, void*);
-        static void* decode0(asn_TYPE_descriptor_t&, memblock const&);
-
     public:
-        template <typename T>
-        static std::string encode(asn_TYPE_descriptor_t &td, T const &node) {
-            T dup = node;
-            return encode0(td, &dup);
+        xer_codec(xer_encoder_flags_e flags = XER_F_CANONICAL)
+            :_M_flags(flags) {
         }
 
+        //typedef int (asn_app_consume_bytes_f)(const void *buffer, size_t size,
+        //    void *application_specific_key);
+        static int consume(void const*, size_t, void*);
+
         template <typename T>
-        static asn1c_ptr<T> decode(asn_TYPE_descriptor_t &td, memblock const &node) {
-            T *p = reinterpret_cast<T*>(decode0(td, node));
-            if (!p)
-                throw std::runtime_error("Failed decode xer data!");
-            return asn1c_ptr<T>(td, p);
+        std::string
+        encode(T const&, asn_TYPE_descriptor_t*);
+
+        template <typename T>
+        refcnt_ptr<T>
+        decode(std::string const&, asn_TYPE_descriptor_t*);
+    private:
+        xer_encoder_flags_e _M_flags;
+    };
+
+    template <typename T>
+    std::string
+    xer_codec::encode(T const &pdu, asn_TYPE_descriptor_t *td) {
+        std::ostringstream oss;
+        asn_enc_rval_t rval = xer_encode(
+                td,
+                const_cast<T*>(&pdu),
+                _M_flags,
+                &xer_codec::consume,
+                &oss);
+        if (rval.encoded == -1) {
+            std::ostringstream es;
+            es << "failed to encode " << rval.failed_type->name;
+            throw std::runtime_error(es.str());
         }
+        return oss.str();
+    }
+
+    template <typename T>
+    refcnt_ptr<T>
+    xer_codec::decode(std::string const &xer, asn_TYPE_descriptor_t *td) {
+        refcnt_ptr<T> p;
+        T *pdu = NULL;
+        asn_dec_rval_t rval = xer_decode(
+                NULL,
+                td,
+                reinterpret_cast<void**>(&pdu),
+                xer.c_str(),
+                xer.size());
+        // FIXME use ASN_STRUCT_FREE deleter
+        refcnt_ptr<T> pp(pdu, new asn1c_deleter(td));
+        p.swap(pp);
+        if (rval.code != RC_OK) {
+            std::ostringstream es;
+            es << "failed to decode " << td->name;
+            throw std::runtime_error(es.str());
+        }
+        return p;
+    }
+
+    class asn_codec {
+    public:
     };
 }
 

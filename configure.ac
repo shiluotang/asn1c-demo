@@ -10,13 +10,13 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Werror])
 
 # Checks for programs.
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_PROG_CXX
 AC_PROG_CC
-m4_pattern_allow([AM_PROG_AR])
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
 
 # Checks for libraries.
