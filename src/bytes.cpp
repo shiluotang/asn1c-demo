@@ -88,7 +88,7 @@ namespace asn1cxx {
     }
 
     std::ostream& operator << (std::ostream &os, bytes const &b) {
-        misc::ios_guarder::guard(os);
+        misc::ios_guarder guarder(os);
         typedef bytes::byte byte;
         os << std::hex << std::uppercase << std::setfill('0');
         for (byte const* p = static_cast<byte const*>(b.address()),

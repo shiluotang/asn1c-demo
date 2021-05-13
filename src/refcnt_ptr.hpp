@@ -8,9 +8,8 @@
 
 namespace asn1cxx {
     struct deleter {
-    public:
         virtual ~deleter() {}
-    public:
+
         virtual void operator() (void *p) {
             if (p)
                 std::free(p);
@@ -19,23 +18,21 @@ namespace asn1cxx {
 
     template <typename T>
     struct typed_deleter :deleter {
-    public:
-        virtual void operator() (void *p) {
-            deallocate(static_cast<T*>(p));
-        }
+        virtual ~typed_deleter() {}
 
-        void deallocate(T *p) {
+        virtual void operator() (void *p) {
             if (p)
-                delete p;
+                delete static_cast<T*>(p);
         }
     };
 
     template <typename T>
     struct typed_deleter<T[]> :deleter {
-    public:
-        void deallocate(T *p) {
+        virtual ~typed_deleter() {}
+
+        virtual void operator() (void *p) {
             if (p)
-                delete[] p;
+                delete[] static_cast<T*>(p);
         }
     };
 
