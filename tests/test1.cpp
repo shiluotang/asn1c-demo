@@ -108,6 +108,7 @@ TEST_START {
 
     uper_codec uper;
     xer_codec xer;
+    asn_codec asn;
 
     unsigned char buffer[] = {0xa, 0x0, 0xb, 0x0, 0x0, 0xc, 0x0, 0x0, 0x0, 0xd};
 
@@ -123,10 +124,11 @@ TEST_START {
     for (int i = 0; i < 40; ++i) {
         bits.bits_unused = i;
         string const &xmlstr = xer.encode(bits, &asn_DEF_BIT_STRING);
-        cout << "unused bits = " << i << ", " << xmlstr << endl;
+        cout << "unused bits = " << i << ", [XER] " << xmlstr << endl;
         refcnt_ptr<BIT_STRING_t> ptr = xer.decode<BIT_STRING_t>(xmlstr, &asn_DEF_BIT_STRING);
         string const &xmlstr2 = xer.encode(*ptr, &asn_DEF_BIT_STRING);
-        cout << "unused bits = " << i << ", " << xmlstr2 << endl;
+        cout << "unused bits = " << i << ", [XER] " << xmlstr2 << endl;
+        cout << "unused bits = " << i << ", [ASN] " << asn.encode(*ptr, &asn_DEF_BIT_STRING) << endl;
     }
 
     properties props;
@@ -134,7 +136,7 @@ TEST_START {
     props.put("key", 105);
     cout << props.get("key", 100) << endl;
 
-    std::fstream iofile("application.properties", std::ios::trunc);
+    std::fstream iofile("application.properties");
     if (!iofile)
         throw std::runtime_error("application.properties can't be open");
     iofile << props;

@@ -40,16 +40,16 @@ namespace asn1cxx {
 
         template <typename T>
         bytes
-        encode(T const&, asn_TYPE_descriptor_t*);
+        encode(T const&, asn_TYPE_descriptor_t*) const;
 
         template <typename T>
         refcnt_ptr<T>
-        decode(bytes const&, asn_TYPE_descriptor_t*);
+        decode(bytes const&, asn_TYPE_descriptor_t*) const;
     };
 
     template <typename T>
     bytes
-    uper_codec::encode(T const &pdu, asn_TYPE_descriptor_t *td) {
+    uper_codec::encode(T const &pdu, asn_TYPE_descriptor_t *td) const {
         bytes b;
         asn_enc_rval_t rval = uper_encode(
                 td,
@@ -66,7 +66,7 @@ namespace asn1cxx {
 
     template <typename T>
     refcnt_ptr<T>
-    uper_codec::decode(bytes const &uper, asn_TYPE_descriptor_t *td) {
+    uper_codec::decode(bytes const &uper, asn_TYPE_descriptor_t *td) const {
         T *pdu = NULL;
         refcnt_ptr<T> p;
         asn_dec_rval_t rval = uper_decode_complete(
@@ -97,18 +97,18 @@ namespace asn1cxx {
 
         template <typename T>
         std::string
-        encode(T const&, asn_TYPE_descriptor_t*);
+        encode(T const&, asn_TYPE_descriptor_t*) const;
 
         template <typename T>
         refcnt_ptr<T>
-        decode(std::string const&, asn_TYPE_descriptor_t*);
+        decode(std::string const&, asn_TYPE_descriptor_t*) const;
     private:
         xer_encoder_flags_e _M_flags;
     };
 
     template <typename T>
     std::string
-    xer_codec::encode(T const &pdu, asn_TYPE_descriptor_t *td) {
+    xer_codec::encode(T const &pdu, asn_TYPE_descriptor_t *td) const {
         std::ostringstream oss;
         asn_enc_rval_t rval = xer_encode(
                 td,
@@ -126,7 +126,7 @@ namespace asn1cxx {
 
     template <typename T>
     refcnt_ptr<T>
-    xer_codec::decode(std::string const &xer, asn_TYPE_descriptor_t *td) {
+    xer_codec::decode(std::string const &xer, asn_TYPE_descriptor_t *td) const {
         refcnt_ptr<T> p;
         T *pdu = NULL;
         asn_dec_rval_t rval = xer_decode(
@@ -135,7 +135,7 @@ namespace asn1cxx {
                 reinterpret_cast<void**>(&pdu),
                 xer.c_str(),
                 xer.size());
-        // FIXME use ASN_STRUCT_FREE deleter
+        // use ASN_STRUCT_FREE deleter
         refcnt_ptr<T> pp(pdu, new asn1c_deleter(td));
         p.swap(pp);
         if (rval.code != RC_OK) {
@@ -148,7 +148,29 @@ namespace asn1cxx {
 
     class asn_codec {
     public:
+        static int consume(void const*, size_t, void*);
+
+        template <typename T>
+        std::string encode(T const&, asn_TYPE_descriptor_t*) const;
     };
+
+    template <typename T>
+    std::string
+    asn_codec::encode(T const &pdu, asn_TYPE_descriptor_t *td) const {
+        std::ostringstream oss;
+        int rc = td->print_struct(
+                td,
+                &pdu,
+                0,
+                &asn_codec::consume,
+                &oss);
+        if (rc == -1) {
+            std::ostringstream es;
+            es << "failed to encode " << td->name;
+            throw std::runtime_error(es.str());
+        }
+        return oss.str();
+    }
 }
 
 #endif // ASN1CXX_HPP_INCLUDED
