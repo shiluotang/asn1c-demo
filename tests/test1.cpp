@@ -136,9 +136,9 @@ TEST_START {
     props.put("key", 105);
     cout << props.get("key", 100) << endl;
 
-    std::fstream iofile("application.properties");
-    if (!iofile)
+    std::ofstream ofile("application.properties");
+    if (!ofile)
         throw std::runtime_error("application.properties can't be open");
-    iofile << props;
+    ofile << props;
 
 } TEST_STOP
